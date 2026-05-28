@@ -7,6 +7,9 @@ import {
 } from "@/lib/calendar-events";
 import { getAllActivities, getAllBusinessTrips } from "@/lib/data";
 
+/** Prisma needs a live DB; do not pre-render at build time (e.g. on Vercel). */
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [activities, trips] = await Promise.all([
     getAllActivities(),

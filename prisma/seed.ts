@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 function day(year: number, month: number, dayOfMonth: number) {
   return new Date(year, month - 1, dayOfMonth);

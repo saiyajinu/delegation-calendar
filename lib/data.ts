@@ -1,5 +1,5 @@
-import type { Activity } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import type { Activity } from "@/lib/db";
+import { db } from "@/lib/db";
 import { buildDelegationDays } from "@/lib/delegation";
 import {
   endOfDay,
@@ -9,11 +9,11 @@ import {
 } from "@/lib/dates";
 
 export async function getAllActivities() {
-  return prisma.activity.findMany({ orderBy: { date: "asc" } });
+  return db.activity.findMany({ orderBy: { date: "asc" } });
 }
 
 export async function getAllBusinessTrips() {
-  return prisma.businessTrip.findMany({ orderBy: { startDate: "asc" } });
+  return db.businessTrip.findMany({ orderBy: { startDate: "asc" } });
 }
 
 export async function getActivitiesAndTripsInRange(rangeStart: Date, rangeEnd: Date) {
@@ -21,11 +21,11 @@ export async function getActivitiesAndTripsInRange(rangeStart: Date, rangeEnd: D
   const end = endOfDay(rangeEnd);
 
   const [activities, trips] = await Promise.all([
-    prisma.activity.findMany({
+    db.activity.findMany2({
       where: { date: { gte: start, lte: end } },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     }),
-    prisma.businessTrip.findMany({
+    db.businessTrip.findMany2({
       where: {
         startDate: { lte: end },
         endDate: { gte: start },
@@ -44,7 +44,7 @@ export async function getDayDetails(dateParam: string) {
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
 
-  const activeTrip = await prisma.businessTrip.findFirst({
+  const activeTrip = await db.businessTrip.findFirst({
     where: {
       startDate: { lte: dayEnd },
       endDate: { gte: dayStart },
@@ -59,7 +59,7 @@ export async function getDayDetails(dateParam: string) {
     const tripStart = startOfDay(activeTrip.startDate);
     const tripEnd = endOfDay(activeTrip.endDate);
 
-    delegationActivities = await prisma.activity.findMany({
+    delegationActivities = await db.activity.findMany2({
       where: {
         date: { gte: tripStart, lte: tripEnd },
       },
@@ -71,7 +71,7 @@ export async function getDayDetails(dateParam: string) {
     );
   } else {
     delegationActivities = [];
-    activities = await prisma.activity.findMany({
+    activities = await db.activity.findMany2({
       where: { date: { gte: dayStart, lte: dayEnd } },
       orderBy: { createdAt: "asc" },
     });

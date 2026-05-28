@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { eachDayInclusive, formatDateParam, parseDateParam } from "@/lib/dates";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -32,14 +32,12 @@ export async function createBusinessTrip(
     return { ok: false, error: "End date must be on or after start date." };
   }
 
-  await prisma.businessTrip.create({
-    data: {
-      title,
-      city,
-      notes: notes || null,
-      startDate,
-      endDate,
-    },
+  await db.businessTrip.create({
+    title,
+    city,
+    notes: notes || null,
+    startDate,
+    endDate,
   });
 
   revalidatePath("/");

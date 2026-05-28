@@ -16,6 +16,8 @@ type PageProps = {
   params: Promise<{ date: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function DayPage({ params }: PageProps) {
   const { date: dateParam } = await params;
   const details = await getDayDetails(dateParam);

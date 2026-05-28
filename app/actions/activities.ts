@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { parseDateParam } from "@/lib/dates";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -20,12 +20,10 @@ export async function createActivity(formData: FormData): Promise<ActionResult> 
     return { ok: false, error: "A valid date is required." };
   }
 
-  await prisma.activity.create({
-    data: {
-      title,
-      description: description || null,
-      date,
-    },
+  await db.activity.create({
+    title,
+    description: description || null,
+    date,
   });
 
   revalidatePath("/");

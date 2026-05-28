@@ -104,3 +104,49 @@ prisma/
 - No authentication — single-user local app
 - Dates in URLs use `YYYY-MM-DD`
 - Business trips render as multi-day all-day events on the calendar
+
+## Deploying with Turso (recommended for Vercel)
+
+This app supports **local SQLite** (`file:./dev.db`) or **Turso** (`libsql://…`).
+
+### 1. Turso setup
+
+1. Create a DB at [turso.tech](https://turso.tech) (you already have `libsql://carinacalendar-….turso.io`).
+2. Create an auth token:
+   ```bash
+   turso db tokens create carinacalendar
+   ```
+   Or copy it from the Turso dashboard.
+
+### 2. Environment variables
+
+**Local `.env`** (for Turso):
+
+```env
+DATABASE_URL="libsql://carinacalendar-saiyajinu.aws-eu-west-1.turso.io"
+TURSO_AUTH_TOKEN="your-token-here"
+```
+
+**Vercel** → Settings → Environment Variables — add both variables for Production (and Preview if you want).
+
+### 3. Push schema to Turso
+
+From your machine (with `.env` pointing at Turso):
+
+```bash
+npx prisma db push
+npm run db:seed
+```
+
+### 4. Deploy on Vercel
+
+- Build command: `npm run build` (default is fine; `postinstall` runs `prisma generate`)
+- No `file:` URL needed on Vercel when using Turso
+
+### Local SQLite (optional)
+
+```env
+DATABASE_URL="file:./dev.db"
+```
+
+Remove or leave `TURSO_AUTH_TOKEN` unset — the app uses normal Prisma SQLite without the libSQL adapter.
