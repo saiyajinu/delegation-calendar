@@ -1,4 +1,4 @@
-import type { Activity, BusinessTrip } from "@prisma/client";
+import type { Activity, BusinessTrip } from "@/lib/db";
 import {
   formatDateParam,
   toFullCalendarExclusiveEnd,
