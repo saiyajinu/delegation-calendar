@@ -7,8 +7,7 @@ Build a simple web app using:
 * Next.js (App Router)
 * TypeScript
 * Tailwind CSS
-* Prisma ORM
-* SQLite database
+* libsql (@libsql/client) — SQLite via Turso
 * FullCalendar for month calendar UI
 
 The app should be simple, clean, modern, and optimized for desktop first.
@@ -126,6 +125,19 @@ Fields:
 
 ---
 
+# Database Implementation
+
+**Using @libsql/client with Turso:**
+
+- Direct SQL queries (no ORM)
+- Tables auto-created via `CREATE TABLE IF NOT EXISTS` on first connection
+- Connection pooling via libsql
+- Auth token passed in connection string
+
+See `lib/db.ts` for the database client implementation.
+
+---
+
 # UI Requirements
 
 Use:
@@ -140,7 +152,7 @@ Use:
 
 # Technical Requirements
 
-* Use Prisma with SQLite
+* Use libsql with Turso (or local SQLite)
 * Use server actions or API routes for CRUD
 * Use FullCalendar for month calendar
 * Use TypeScript everywhere
@@ -185,10 +197,9 @@ Do NOT implement:
 Generate:
 
 1. Complete Next.js project structure
-2. Prisma schema
+2. Database schema and libsql client
 3. Database setup instructions
 4. Calendar components
 5. Modal components
 6. Day details page
-7. Example seed data
-8. README with setup instructions
+7. README with setup instructions
