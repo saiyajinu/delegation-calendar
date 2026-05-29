@@ -120,8 +120,23 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .fc-theme-custom .fc-daygrid-event {
   margin-top: 2px;
+}
+
+.fc-theme-custom .fc-event:hover {
+  box-shadow: 0 8px 16px rgba(219, 39, 119, 0.15);
+  transform: translateY(-1px);
+}
+
+.fc-theme-custom .fc-daygrid-day {
+  transition: background-color 0.2s ease;
+}
+
+.fc-theme-custom .fc-daygrid-day:hover {
+  background-color: #fffaf5;
+  cursor: pointer;
 }

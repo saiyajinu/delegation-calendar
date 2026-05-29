@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { MapPin, Plane } from "lucide-react";
 import { AppHeader } from "@/app/components/layout/AppHeader";
 import { DayAddButton } from "@/app/components/day/DayAddButton";
+import { ActivityCard } from "@/app/components/day/ActivityCard";
 import { DelegationTimeline } from "@/app/components/day/DelegationTimeline";
 import { TripDayNav } from "@/app/components/day/TripDayNav";
 import { EmptyState } from "@/app/components/ui/EmptyState";
@@ -116,17 +117,12 @@ export default async function DayPage({ params }: PageProps) {
           ) : (
             <ul className="space-y-3">
               {activities.map((activity) => (
-                <li
+                <ActivityCard
                   key={activity.id}
-                  className="rounded-xl border border-rose-200 bg-white p-4 shadow-sm shadow-rose-100/30"
-                >
-                  <h3 className="font-medium text-rose-950">{activity.title}</h3>
-                  {activity.description && (
-                    <p className="mt-2 text-sm leading-relaxed text-rose-700">
-                      {activity.description}
-                    </p>
-                  )}
-                </li>
+                  activity={activity}
+                  dateParam={dateParam}
+                  viewingDayParam={dateParam}
+                />
               ))}
             </ul>
           )}

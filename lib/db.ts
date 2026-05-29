@@ -70,6 +70,41 @@ export const db = {
       return { id: Number(result.lastInsertRowid) };
     },
 
+    async update(id: number, data: { title?: string; description?: string | null; date?: Date }) {
+      await ensureTablesExist();
+      const updates: string[] = [];
+      const args: any[] = [];
+
+      if (data.title !== undefined) {
+        updates.push("title = ?");
+        args.push(data.title);
+      }
+      if (data.description !== undefined) {
+        updates.push("description = ?");
+        args.push(data.description);
+      }
+      if (data.date !== undefined) {
+        updates.push("date = ?");
+        args.push(data.date.toISOString());
+      }
+
+      if (updates.length === 0) return;
+
+      args.push(id);
+      await client.execute({
+        sql: `UPDATE Activity SET ${updates.join(", ")} WHERE id = ?`,
+        args,
+      });
+    },
+
+    async delete(id: number) {
+      await ensureTablesExist();
+      await client.execute({
+        sql: `DELETE FROM Activity WHERE id = ?`,
+        args: [id],
+      });
+    },
+
     async findMany(options?: { orderBy?: Record<string, string>; where?: any }) {
       await ensureTablesExist();
       let sql = "SELECT * FROM Activity";
