@@ -44,7 +44,7 @@ export function ActivityCard({
               </p>
             )}
           </div>
-          <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex gap-1">
             <button
               onClick={() => setEditOpen(true)}
               className="p-2 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors"
