@@ -1,15 +1,14 @@
 import { notFound } from "next/navigation";
-import { MapPin, Plane } from "lucide-react";
 import { AppHeader } from "@/app/components/layout/AppHeader";
 import { DayAddButton } from "@/app/components/day/DayAddButton";
 import { ActivityCard } from "@/app/components/day/ActivityCard";
+import { BusinessTripCard } from "@/app/components/day/BusinessTripCard";
 import { DelegationTimeline } from "@/app/components/day/DelegationTimeline";
 import { TripDayNav } from "@/app/components/day/TripDayNav";
 import { EmptyState } from "@/app/components/ui/EmptyState";
 import { getDayDetails } from "@/lib/data";
 import {
   formatDisplayDate,
-  formatTripDuration,
   isToday,
 } from "@/lib/dates";
 
@@ -57,30 +56,12 @@ export default async function DayPage({ params }: PageProps) {
         </div>
 
         {activeTrip && (
-          <section className="mb-8 rounded-2xl border border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 shadow-sm shadow-pink-100/40">
-            <div className="mb-4 flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-sm">
-                <Plane className="h-5 w-5" />
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold text-rose-950">
-                  {activeTrip.title}
-                </h2>
-                <p className="mt-0.5 flex items-center gap-1 text-sm text-pink-800">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {activeTrip.city}
-                </p>
-                <p className="mt-1 text-sm text-rose-700">
-                  {formatTripDuration(activeTrip.startDate, activeTrip.endDate)}
-                </p>
-              </div>
-            </div>
-            {activeTrip.notes && (
-              <p className="mb-4 rounded-lg bg-white/70 px-4 py-3 text-sm text-rose-800">
-                {activeTrip.notes}
-              </p>
-            )}
-            <div>
+          <>
+            <BusinessTripCard
+              trip={activeTrip}
+              viewingDayParam={dateParam}
+            />
+            <div className="mb-8 mt-6">
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-pink-800/90">
                 Trip days
               </p>
@@ -90,7 +71,7 @@ export default async function DayPage({ params }: PageProps) {
                 currentDateParam={dateParam}
               />
             </div>
-          </section>
+          </>
         )}
 
         <section className="mb-8">

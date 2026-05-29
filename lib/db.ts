@@ -192,6 +192,58 @@ export const db = {
       return { id: Number(result.lastInsertRowid) };
     },
 
+    async update(
+      id: number,
+      data: {
+        title?: string;
+        city?: string;
+        notes?: string | null;
+        startDate?: Date;
+        endDate?: Date;
+      }
+    ) {
+      await ensureTablesExist();
+      const updates: string[] = [];
+      const args: any[] = [];
+
+      if (data.title !== undefined) {
+        updates.push("title = ?");
+        args.push(data.title);
+      }
+      if (data.city !== undefined) {
+        updates.push("city = ?");
+        args.push(data.city);
+      }
+      if (data.notes !== undefined) {
+        updates.push("notes = ?");
+        args.push(data.notes);
+      }
+      if (data.startDate !== undefined) {
+        updates.push("startDate = ?");
+        args.push(data.startDate.toISOString());
+      }
+      if (data.endDate !== undefined) {
+        updates.push("endDate = ?");
+        args.push(data.endDate.toISOString());
+      }
+
+      if (updates.length === 0) return;
+
+      args.push(id);
+      await client.execute({
+        sql: `UPDATE BusinessTrip SET ${updates.join(", ")} WHERE id = ?`,
+        args,
+      });
+    },
+
+    async delete(id: number) {
+      await ensureTablesExist();
+      await client.execute({
+        sql: `DELETE FROM BusinessTrip WHERE id = ?`,
+        args: [id],
+      });
+    },
+
     async findMany(options?: { orderBy?: Record<string, string>; where?: any }) {
       await ensureTablesExist();
       let sql = "SELECT * FROM BusinessTrip";
