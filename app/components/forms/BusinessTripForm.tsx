@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createBusinessTrip } from "@/app/actions/business-trips";
+import { getPersistedUserCode } from "@/lib/user-code";
 import { Button } from "@/app/components/ui/Button";
 
 type BusinessTripFormProps = {
@@ -19,6 +20,7 @@ export function BusinessTripForm({
 }: BusinessTripFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const userCode = getPersistedUserCode();
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -36,6 +38,7 @@ export function BusinessTripForm({
   return (
     <form id="trip-form" action={handleSubmit} className="space-y-4">
       {viewingDay && <input type="hidden" name="viewingDay" value={viewingDay} />}
+      {userCode && <input type="hidden" name="userCode" value={userCode} />}
       <div>
         <label htmlFor="trip-title" className="mb-1 block text-sm font-medium text-rose-900">
           Title

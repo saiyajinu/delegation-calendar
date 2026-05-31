@@ -113,6 +113,7 @@ export function CalendarView({
           }}
           height="100%"
           fixedWeekCount={false}
+          firstDay={1}
           events={events}
           eventDisplay="block"
           dayMaxEvents={3}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MapPin, Plane, Trash2, Edit2 } from "lucide-react";
 import type { BusinessTrip } from "@/lib/db";
 import { deleteBusinessTrip } from "@/app/actions/business-trips";
+import { getPersistedUserCode } from "@/lib/user-code";
 import { BusinessTripEditModal } from "@/app/components/day/BusinessTripEditModal";
 import { formatTripDuration } from "@/lib/dates";
 
@@ -18,6 +19,7 @@ export function BusinessTripCard({
 }: BusinessTripCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const userCode = getPersistedUserCode();
 
   async function handleDelete() {
     if (!confirm("Delete this business trip? This will also remove all associated activities.")) return;
@@ -26,6 +28,7 @@ export function BusinessTripCard({
     const formData = new FormData();
     formData.set("id", String(trip.id));
     if (viewingDayParam) formData.set("viewingDay", viewingDayParam);
+    if (userCode) formData.set("userCode", userCode);
 
     await deleteBusinessTrip(formData);
   }

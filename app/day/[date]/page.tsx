@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { AppHeader } from "@/app/components/layout/AppHeader";
 import { DayAddButton } from "@/app/components/day/DayAddButton";
 import { ActivityCard } from "@/app/components/day/ActivityCard";
@@ -11,6 +12,7 @@ import {
   formatDisplayDate,
   isToday,
 } from "@/lib/dates";
+import { normalizeUserCode } from "@/lib/user-code";
 
 type PageProps = {
   params: Promise<{ date: string }>;
@@ -20,7 +22,9 @@ export const dynamic = "force-dynamic";
 
 export default async function DayPage({ params }: PageProps) {
   const { date: dateParam } = await params;
-  const details = await getDayDetails(dateParam);
+  const requestCookies = await cookies();
+  const userCode = normalizeUserCode(requestCookies.get("userCode")?.value ?? null);
+  const details = await getDayDetails(dateParam, userCode);
 
   if (!details) {
     notFound();

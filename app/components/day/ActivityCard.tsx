@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Trash2, Edit2 } from "lucide-react";
 import type { Activity } from "@/lib/db";
 import { deleteActivity } from "@/app/actions/activities";
+import { getPersistedUserCode } from "@/lib/user-code";
 import { ActivityEditModal } from "@/app/components/day/ActivityEditModal";
 
 type ActivityCardProps = {
@@ -19,6 +20,7 @@ export function ActivityCard({
 }: ActivityCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const userCode = getPersistedUserCode();
 
   async function handleDelete() {
     if (!confirm("Delete this activity?")) return;
@@ -28,6 +30,7 @@ export function ActivityCard({
     formData.set("id", String(activity.id));
     formData.set("date", dateParam);
     if (viewingDayParam) formData.set("viewingDay", viewingDayParam);
+    if (userCode) formData.set("userCode", userCode);
 
     await deleteActivity(formData);
   }

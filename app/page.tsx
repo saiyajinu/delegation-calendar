@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { CalendarPageClient } from "@/app/components/calendar/CalendarPageClient";
 import { AppHeader } from "@/app/components/layout/AppHeader";
 import {
@@ -6,15 +7,21 @@ import {
   tripsToEvents,
 } from "@/lib/calendar-events";
 import { getAllActivities, getAllBusinessTrips } from "@/lib/data";
+import { normalizeUserCode } from "@/lib/user-code";
 
 /** Prisma needs a live DB; do not pre-render at build time (e.g. on Vercel). */
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [activities, trips] = await Promise.all([
-    getAllActivities(),
-    getAllBusinessTrips(),
-  ]);
+  const requestCookies = await cookies();
+  const userCode = normalizeUserCode(requestCookies.get("userCode")?.value ?? null);
+
+  const [activities, trips] = userCode
+    ? await Promise.all([
+        getAllActivities(userCode),
+        getAllBusinessTrips(userCode),
+      ])
+    : [[], []];
 
   const events = [...activitiesToEvents(activities), ...tripsToEvents(trips)];
 

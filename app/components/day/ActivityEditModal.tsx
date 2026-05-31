@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Activity } from "@/lib/db";
 import { updateActivity } from "@/app/actions/activities";
+import { getPersistedUserCode } from "@/lib/user-code";
 import { Modal } from "@/app/components/ui/Modal";
 import { formatDateParam, parseDateParam } from "@/lib/dates";
 
@@ -26,6 +27,7 @@ export function ActivityEditModal({
   const [date, setDate] = useState(formatDateParam(activity.date));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const userCode = getPersistedUserCode();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,6 +40,7 @@ export function ActivityEditModal({
     formData.set("description", description);
     formData.set("date", date);
     if (viewingDayParam) formData.set("viewingDay", viewingDayParam);
+    if (userCode) formData.set("userCode", userCode);
 
     const result = await updateActivity(formData);
     if (result.ok) {

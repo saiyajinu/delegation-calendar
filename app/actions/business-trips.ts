@@ -3,8 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { eachDayInclusive, formatDateParam, parseDateParam } from "@/lib/dates";
+import { normalizeUserCode } from "@/lib/user-code";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+
+function getUserCode(formData: FormData): string | null {
+  return normalizeUserCode(String(formData.get("userCode") ?? ""));
+}
 
 export async function createBusinessTrip(
   formData: FormData,
@@ -14,7 +19,11 @@ export async function createBusinessTrip(
   const notes = String(formData.get("notes") ?? "").trim();
   const startStr = String(formData.get("startDate") ?? "").trim();
   const endStr = String(formData.get("endDate") ?? "").trim();
+  const userCode = getUserCode(formData);
 
+  if (!userCode) {
+    return { ok: false, error: "A valid user code is required." };
+  }
   if (!title) {
     return { ok: false, error: "Title is required." };
   }
@@ -38,6 +47,7 @@ export async function createBusinessTrip(
     notes: notes || null,
     startDate,
     endDate,
+    userCode,
   });
 
   revalidatePath("/");
@@ -62,9 +72,13 @@ export async function updateBusinessTrip(
   const notes = String(formData.get("notes") ?? "").trim();
   const startStr = String(formData.get("startDate") ?? "").trim();
   const endStr = String(formData.get("endDate") ?? "").trim();
+  const userCode = getUserCode(formData);
 
   if (!id) {
     return { ok: false, error: "Trip ID is required." };
+  }
+  if (!userCode) {
+    return { ok: false, error: "A valid user code is required." };
   }
   if (!title) {
     return { ok: false, error: "Title is required." };
@@ -89,6 +103,7 @@ export async function updateBusinessTrip(
     notes: notes || null,
     startDate,
     endDate,
+    userCode,
   });
 
   revalidatePath("/");
@@ -108,12 +123,17 @@ export async function deleteBusinessTrip(
   formData: FormData,
 ): Promise<ActionResult> {
   const id = Number(formData.get("id") ?? 0);
+  const userCode = getUserCode(formData);
 
   if (!id) {
     return { ok: false, error: "Trip ID is required." };
   }
 
-  await db.businessTrip.delete(id);
+  if (!userCode) {
+    return { ok: false, error: "A valid user code is required." };
+  }
+
+  await db.businessTrip.delete(id, userCode);
 
   revalidatePath("/");
 

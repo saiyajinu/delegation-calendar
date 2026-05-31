@@ -1,7 +1,8 @@
-"use client";
+"use client"
 
 import { useState, useTransition } from "react";
 import { createActivity } from "@/app/actions/activities";
+import { getPersistedUserCode } from "@/lib/user-code";
 import { Button } from "@/app/components/ui/Button";
 
 type ActivityFormProps = {
@@ -13,6 +14,7 @@ type ActivityFormProps = {
 export function ActivityForm({ defaultDate, viewingDay, onSuccess }: ActivityFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const userCode = getPersistedUserCode();
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -30,6 +32,7 @@ export function ActivityForm({ defaultDate, viewingDay, onSuccess }: ActivityFor
   return (
     <form id="activity-form" action={handleSubmit} className="space-y-4">
       {viewingDay && <input type="hidden" name="viewingDay" value={viewingDay} />}
+      {userCode && <input type="hidden" name="userCode" value={userCode} />}
       <div>
         <label htmlFor="activity-title" className="mb-1 block text-sm font-medium text-rose-900">
           Title

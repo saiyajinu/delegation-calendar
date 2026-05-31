@@ -8,27 +8,44 @@ import {
   startOfDay,
 } from "@/lib/dates";
 
-export async function getAllActivities() {
-  return db.activity.findMany({ orderBy: { date: "asc" } });
+export async function getAllActivities(userCode: string | null) {
+  if (!userCode) return [];
+  return db.activity.findMany({
+    where: { userCode },
+    orderBy: { date: "asc" },
+  });
 }
 
-export async function getAllBusinessTrips() {
-  return db.businessTrip.findMany({ orderBy: { startDate: "asc" } });
+export async function getAllBusinessTrips(userCode: string | null) {
+  if (!userCode) return [];
+  return db.businessTrip.findMany({
+    where: { userCode },
+    orderBy: { startDate: "asc" },
+  });
 }
 
-export async function getActivitiesAndTripsInRange(rangeStart: Date, rangeEnd: Date) {
+export async function getActivitiesAndTripsInRange(
+  rangeStart: Date,
+  rangeEnd: Date,
+  userCode: string | null,
+) {
+  if (!userCode) {
+    return { activities: [], trips: [] };
+  }
+
   const start = startOfDay(rangeStart);
   const end = endOfDay(rangeEnd);
 
   const [activities, trips] = await Promise.all([
     db.activity.findMany2({
-      where: { date: { gte: start, lte: end } },
+      where: { date: { gte: start, lte: end }, userCode },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     }),
     db.businessTrip.findMany2({
       where: {
         startDate: { lte: end },
         endDate: { gte: start },
+        userCode,
       },
       orderBy: { startDate: "asc" },
     }),
@@ -37,20 +54,23 @@ export async function getActivitiesAndTripsInRange(rangeStart: Date, rangeEnd: D
   return { activities, trips };
 }
 
-export async function getDayDetails(dateParam: string) {
+export async function getDayDetails(dateParam: string, userCode: string | null) {
   const date = parseDateParam(dateParam);
   if (!date) return null;
 
   const dayStart = startOfDay(date);
   const dayEnd = endOfDay(date);
 
-  const activeTrip = await db.businessTrip.findFirst({
-    where: {
-      startDate: { lte: dayEnd },
-      endDate: { gte: dayStart },
-    },
-    orderBy: { startDate: "asc" },
-  });
+  const activeTrip = userCode
+    ? await db.businessTrip.findFirst({
+        where: {
+          startDate: { lte: dayEnd },
+          endDate: { gte: dayStart },
+          userCode,
+        },
+        orderBy: { startDate: "asc" },
+      })
+    : null;
 
   let activities: Activity[];
   let delegationActivities: Activity[];
@@ -62,6 +82,7 @@ export async function getDayDetails(dateParam: string) {
     delegationActivities = await db.activity.findMany2({
       where: {
         date: { gte: tripStart, lte: tripEnd },
+        userCode,
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     });
@@ -71,10 +92,12 @@ export async function getDayDetails(dateParam: string) {
     );
   } else {
     delegationActivities = [];
-    activities = await db.activity.findMany2({
-      where: { date: { gte: dayStart, lte: dayEnd } },
-      orderBy: { createdAt: "asc" },
-    });
+    activities = userCode
+      ? await db.activity.findMany2({
+          where: { date: { gte: dayStart, lte: dayEnd }, userCode },
+          orderBy: { createdAt: "asc" },
+        })
+      : [];
   }
 
   const delegationDays = activeTrip

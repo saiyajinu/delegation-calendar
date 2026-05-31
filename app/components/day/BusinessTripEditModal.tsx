@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { BusinessTrip } from "@/lib/db";
 import { updateBusinessTrip } from "@/app/actions/business-trips";
+import { getPersistedUserCode } from "@/lib/user-code";
 import { Modal } from "@/app/components/ui/Modal";
 import { formatDateParam } from "@/lib/dates";
 
@@ -26,6 +27,7 @@ export function BusinessTripEditModal({
   const [endDate, setEndDate] = useState(formatDateParam(trip.endDate));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const userCode = getPersistedUserCode();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,6 +42,7 @@ export function BusinessTripEditModal({
     formData.set("startDate", startDate);
     formData.set("endDate", endDate);
     if (viewingDayParam) formData.set("viewingDay", viewingDayParam);
+    if (userCode) formData.set("userCode", userCode);
 
     const result = await updateBusinessTrip(formData);
     if (result.ok) {

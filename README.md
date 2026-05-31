@@ -8,6 +8,7 @@ A personal calendar web app for logging daily activities and tracking multi-day 
 - **Day modal** — click any day to add an activity or business trip
 - **Day details** (`/day/YYYY-MM-DD`) — activities, active trip info, and quick navigation across trip days
 - **Event click** — opens the day details page
+- **Passwordless identity** — enter or generate an 8-character access code and keep activity data scoped to that code
 
 ## Tech stack
 
@@ -107,7 +108,8 @@ Using **@libsql/client** with Turso:
 
 ## Notes
 
-- No authentication — single-user local app
+- Passwordless access code is used instead of passwords: a generated or entered 8-character code is stored in cookies/localStorage
+- Activities and trips are scoped to the current access code for basic per-user isolation
 - Dates in URLs use `YYYY-MM-DD`
 - Business trips render as multi-day all-day events on the calendar
 - Environment variables (`.env`) are git-ignored

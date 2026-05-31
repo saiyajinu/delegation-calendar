@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { getActivitiesAndTripsInRange } from "@/lib/data";
 import {
   buildExportFilename,
@@ -14,7 +15,9 @@ export type ExportResult =
 export async function exportLast30Days(): Promise<ExportResult> {
   try {
     const { start, end } = getLast30DaysRange();
-    const { activities, trips } = await getActivitiesAndTripsInRange(start, end);
+    const requestCookies = await cookies();
+    const userCode = requestCookies.get("userCode")?.value ?? null;
+    const { activities, trips } = await getActivitiesAndTripsInRange(start, end, userCode);
     const text = formatCalendarExport(activities, trips, start, end);
     const filename = buildExportFilename(start, end);
 
