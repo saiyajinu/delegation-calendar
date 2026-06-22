@@ -5,12 +5,17 @@ export type WithLocationName<T extends { locationId: string | null }> = T & {
 };
 
 export async function enrichWithLocationNames<T extends { locationId: string | null }>(
-  items: T[]
+  items: T[],
+  userCode: string | null
 ): Promise<WithLocationName<T>[]> {
+  if (!userCode) {
+    return items.map((item) => ({ ...item, locationName: null }));
+  }
+
   const ids = items
     .map((item) => item.locationId)
     .filter((id): id is string => Boolean(id));
-  const names = await getLocationNamesByIds(ids);
+  const names = await getLocationNamesByIds(ids, userCode);
 
   return items.map((item) => ({
     ...item,

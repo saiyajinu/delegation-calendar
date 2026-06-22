@@ -110,8 +110,16 @@ async function ensureTablesExist() {
         name TEXT NOT NULL,
         lat REAL NOT NULL,
         lng REAL NOT NULL,
-        created_at INTEGER NOT NULL
+        created_at INTEGER NOT NULL,
+        user_code TEXT NOT NULL DEFAULT ''
       )
+    `);
+
+    await ensureColumnExists("locations", "user_code", "TEXT NOT NULL DEFAULT ''");
+
+    await client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_locations_user_code
+      ON locations(user_code)
     `);
 
     await client.execute(`

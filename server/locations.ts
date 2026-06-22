@@ -35,16 +35,46 @@ function mapFieldRow(row: Record<string, unknown>): LocationField {
   };
 }
 
+function mapLocationRow(row: Record<string, unknown>): LocationSummary {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    lat: row.lat as number,
+    lng: row.lng as number,
+  };
+}
+
+async function getOwnedLocationRow(
+  id: string,
+  userCode: string
+): Promise<Record<string, unknown> | null> {
+  const result = await client.execute({
+    sql: `SELECT id, name, lat, lng, created_at FROM locations WHERE id = ? AND user_code = ?`,
+    args: [id, userCode],
+  });
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return result.rows[0] as Record<string, unknown>;
+}
+
 export async function createLocation(data: {
   name: string;
   lat: number;
   lng: number;
+  userCode: string;
 }): Promise<LocationSummary> {
   await ensureDbReady();
 
   const name = data.name.trim();
   if (!name) {
     throw new Error("Name is required.");
+  }
+
+  if (!data.userCode) {
+    throw new Error("A valid user code is required.");
   }
 
   if (!isWithinRomania(data.lat, data.lng)) {
@@ -55,32 +85,37 @@ export async function createLocation(data: {
   const createdAt = Date.now();
 
   await client.execute({
-    sql: `INSERT INTO locations (id, name, lat, lng, created_at) VALUES (?, ?, ?, ?, ?)`,
-    args: [id, name, data.lat, data.lng, createdAt],
+    sql: `INSERT INTO locations (id, name, lat, lng, created_at, user_code) VALUES (?, ?, ?, ?, ?, ?)`,
+    args: [id, name, data.lat, data.lng, createdAt, data.userCode],
   });
 
   return { id, name, lat: data.lat, lng: data.lng };
 }
 
-export async function getLocations(): Promise<LocationSummary[]> {
+export async function getLocations(userCode: string): Promise<LocationSummary[]> {
   await ensureDbReady();
 
+  if (!userCode) {
+    return [];
+  }
+
   const result = await client.execute({
-    sql: `SELECT id, name, lat, lng FROM locations ORDER BY name COLLATE NOCASE ASC`,
+    sql: `SELECT id, name, lat, lng FROM locations WHERE user_code = ? ORDER BY name COLLATE NOCASE ASC`,
+    args: [userCode],
   });
 
-  return result.rows.map((row) => ({
-    id: row.id as string,
-    name: row.name as string,
-    lat: row.lat as number,
-    lng: row.lng as number,
-  }));
+  return result.rows.map((row) => mapLocationRow(row as Record<string, unknown>));
 }
 
 export async function getLocationNamesByIds(
-  ids: string[]
+  ids: string[],
+  userCode: string
 ): Promise<Record<string, string>> {
   await ensureDbReady();
+
+  if (!userCode) {
+    return {};
+  }
 
   const uniqueIds = [...new Set(ids.filter(Boolean))];
   if (uniqueIds.length === 0) {
@@ -89,8 +124,8 @@ export async function getLocationNamesByIds(
 
   const placeholders = uniqueIds.map(() => "?").join(", ");
   const result = await client.execute({
-    sql: `SELECT id, name FROM locations WHERE id IN (${placeholders})`,
-    args: uniqueIds,
+    sql: `SELECT id, name FROM locations WHERE user_code = ? AND id IN (${placeholders})`,
+    args: [userCode, ...uniqueIds],
   });
 
   const names: Record<string, string> = {};
@@ -100,19 +135,21 @@ export async function getLocationNamesByIds(
   return names;
 }
 
-export async function getLocationDetails(id: string): Promise<LocationDetails | null> {
+export async function getLocationDetails(
+  id: string,
+  userCode: string
+): Promise<LocationDetails | null> {
   await ensureDbReady();
 
-  const locationResult = await client.execute({
-    sql: `SELECT id, name, lat, lng, created_at FROM locations WHERE id = ?`,
-    args: [id],
-  });
-
-  if (locationResult.rows.length === 0) {
+  if (!userCode) {
     return null;
   }
 
-  const row = locationResult.rows[0];
+  const row = await getOwnedLocationRow(id, userCode);
+  if (!row) {
+    return null;
+  }
+
   const fieldsResult = await client.execute({
     sql: `SELECT id, location_id, field_name, field_value FROM location_fields WHERE location_id = ? ORDER BY field_name COLLATE NOCASE ASC`,
     args: [id],
@@ -130,11 +167,16 @@ export async function getLocationDetails(id: string): Promise<LocationDetails | 
 
 export async function updateLocation(data: {
   id: string;
+  userCode: string;
   name?: string;
   lat?: number;
   lng?: number;
 }): Promise<LocationSummary> {
   await ensureDbReady();
+
+  if (!data.userCode) {
+    throw new Error("A valid user code is required.");
+  }
 
   const updates: string[] = [];
   const args: (string | number | null)[] = [];
@@ -168,14 +210,18 @@ export async function updateLocation(data: {
     throw new Error("Location must be within Romania.");
   }
 
-  args.push(data.id);
+  args.push(data.id, data.userCode);
 
-  await client.execute({
-    sql: `UPDATE locations SET ${updates.join(", ")} WHERE id = ?`,
+  const result = await client.execute({
+    sql: `UPDATE locations SET ${updates.join(", ")} WHERE id = ? AND user_code = ?`,
     args,
   });
 
-  const updated = await getLocationDetails(data.id);
+  if (result.rowsAffected === 0) {
+    throw new Error("Location not found.");
+  }
+
+  const updated = await getLocationDetails(data.id, data.userCode);
   if (!updated) {
     throw new Error("Location not found.");
   }
@@ -188,8 +234,17 @@ export async function updateLocation(data: {
   };
 }
 
-export async function deleteLocation(id: string): Promise<void> {
+export async function deleteLocation(id: string, userCode: string): Promise<void> {
   await ensureDbReady();
+
+  if (!userCode) {
+    throw new Error("A valid user code is required.");
+  }
+
+  const owned = await getOwnedLocationRow(id, userCode);
+  if (!owned) {
+    throw new Error("Location not found.");
+  }
 
   await client.execute({
     sql: `DELETE FROM location_fields WHERE location_id = ?`,
@@ -197,17 +252,27 @@ export async function deleteLocation(id: string): Promise<void> {
   });
 
   await client.execute({
-    sql: `DELETE FROM locations WHERE id = ?`,
-    args: [id],
+    sql: `DELETE FROM locations WHERE id = ? AND user_code = ?`,
+    args: [id, userCode],
   });
 }
 
 export async function addLocationField(data: {
   locationId: string;
+  userCode: string;
   fieldName: string;
   fieldValue?: string | null;
 }): Promise<LocationField> {
   await ensureDbReady();
+
+  if (!data.userCode) {
+    throw new Error("A valid user code is required.");
+  }
+
+  const owned = await getOwnedLocationRow(data.locationId, data.userCode);
+  if (!owned) {
+    throw new Error("Location not found.");
+  }
 
   const fieldName = data.fieldName.trim();
   if (!fieldName) {
@@ -232,10 +297,29 @@ export async function addLocationField(data: {
 
 export async function updateLocationField(data: {
   id: string;
+  userCode: string;
   fieldName?: string;
   fieldValue?: string | null;
 }): Promise<LocationField> {
   await ensureDbReady();
+
+  if (!data.userCode) {
+    throw new Error("A valid user code is required.");
+  }
+
+  const existing = await client.execute({
+    sql: `
+      SELECT lf.id, lf.location_id, lf.field_name, lf.field_value
+      FROM location_fields lf
+      INNER JOIN locations l ON l.id = lf.location_id
+      WHERE lf.id = ? AND l.user_code = ?
+    `,
+    args: [data.id, data.userCode],
+  });
+
+  if (existing.rows.length === 0) {
+    throw new Error("Field not found.");
+  }
 
   const updates: string[] = [];
   const args: (string | number | null)[] = [];
@@ -266,8 +350,13 @@ export async function updateLocationField(data: {
   });
 
   const result = await client.execute({
-    sql: `SELECT id, location_id, field_name, field_value FROM location_fields WHERE id = ?`,
-    args: [data.id],
+    sql: `
+      SELECT lf.id, lf.location_id, lf.field_name, lf.field_value
+      FROM location_fields lf
+      INNER JOIN locations l ON l.id = lf.location_id
+      WHERE lf.id = ? AND l.user_code = ?
+    `,
+    args: [data.id, data.userCode],
   });
 
   if (result.rows.length === 0) {
@@ -277,11 +366,24 @@ export async function updateLocationField(data: {
   return mapFieldRow(result.rows[0] as Record<string, unknown>);
 }
 
-export async function deleteLocationField(id: string): Promise<void> {
+export async function deleteLocationField(id: string, userCode: string): Promise<void> {
   await ensureDbReady();
 
-  await client.execute({
-    sql: `DELETE FROM location_fields WHERE id = ?`,
-    args: [id],
+  if (!userCode) {
+    throw new Error("A valid user code is required.");
+  }
+
+  const result = await client.execute({
+    sql: `
+      DELETE FROM location_fields
+      WHERE id = ? AND location_id IN (
+        SELECT id FROM locations WHERE user_code = ?
+      )
+    `,
+    args: [id, userCode],
   });
+
+  if (result.rowsAffected === 0) {
+    throw new Error("Field not found.");
+  }
 }

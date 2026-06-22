@@ -15,7 +15,7 @@ export async function getAllActivities(userCode: string | null) {
     where: { userCode },
     orderBy: { date: "asc" },
   });
-  return enrichWithLocationNames(activities);
+  return enrichWithLocationNames(activities, userCode);
 }
 
 export async function getAllBusinessTrips(userCode: string | null) {
@@ -24,7 +24,7 @@ export async function getAllBusinessTrips(userCode: string | null) {
     where: { userCode },
     orderBy: { startDate: "asc" },
   });
-  return enrichWithLocationNames(trips);
+  return enrichWithLocationNames(trips, userCode);
 }
 
 export async function getActivitiesAndTripsInRange(
@@ -105,9 +105,9 @@ export async function getDayDetails(dateParam: string, userCode: string | null) 
 
   const [enrichedActivities, enrichedActiveTrip, enrichedDelegationActivities] =
     await Promise.all([
-      enrichWithLocationNames(activities),
-      activeTrip ? enrichWithLocationNames([activeTrip]).then((items) => items[0] ?? null) : null,
-      enrichWithLocationNames(delegationActivities),
+      enrichWithLocationNames(activities, userCode),
+      activeTrip ? enrichWithLocationNames([activeTrip], userCode).then((items) => items[0] ?? null) : null,
+      enrichWithLocationNames(delegationActivities, userCode),
     ]);
 
   const enrichedDelegationDays =
