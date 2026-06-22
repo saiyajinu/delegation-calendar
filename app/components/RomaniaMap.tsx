@@ -3,13 +3,16 @@
 import { useEffect } from "react";
 import L from "leaflet";
 import {
+  CircleMarker,
   MapContainer,
   Marker,
   Popup,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
+import { MarkerPopup } from "@/app/components/map/MarkerPopup";
 import { ROMANIA_BOUNDS, ROMANIA_CENTER } from "@/lib/map-config";
 import type { LocationSummary } from "@/server/locations";
 import "leaflet/dist/leaflet.css";
@@ -26,11 +29,31 @@ const markerIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+type FlyTarget = {
+  lat: number;
+  lng: number;
+  zoom?: number;
+  key: number;
+};
+
 type RomaniaMapProps = {
   locations: LocationSummary[];
   onMapClick: (lat: number, lng: number) => void;
   onOpenDetails: (id: string) => void;
+  flyTarget?: FlyTarget | null;
+  previewPin?: { lat: number; lng: number } | null;
 };
+
+function FlyToHandler({ target }: { target: FlyTarget | null | undefined }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!target) return;
+    map.flyTo([target.lat, target.lng], target.zoom ?? 15, { duration: 1.2 });
+  }, [target, map]);
+
+  return null;
+}
 
 function MapClickHandler({
   onMapClick,
@@ -49,6 +72,8 @@ export function RomaniaMap({
   locations,
   onMapClick,
   onOpenDetails,
+  flyTarget,
+  previewPin,
 }: RomaniaMapProps) {
   useEffect(() => {
     delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -74,6 +99,19 @@ export function RomaniaMap({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapClickHandler onMapClick={onMapClick} />
+      <FlyToHandler target={flyTarget} />
+      {previewPin ? (
+        <CircleMarker
+          center={[previewPin.lat, previewPin.lng]}
+          radius={12}
+          pathOptions={{
+            color: "#047857",
+            fillColor: "#10b981",
+            fillOpacity: 0.85,
+            weight: 3,
+          }}
+        />
+      ) : null}
       <MarkerClusterGroup chunkedLoading showCoverageOnHover={false} spiderfyOnMaxZoom>
         {locations.map((location) => (
           <Marker
@@ -87,16 +125,11 @@ export function RomaniaMap({
             }}
           >
             <Popup>
-              <div className="min-w-[10rem] space-y-3 p-1">
-                <p className="text-sm font-semibold text-rose-950">{location.name}</p>
-                <button
-                  type="button"
-                  onClick={() => onOpenDetails(location.id)}
-                  className="inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700"
-                >
-                  Open Details
-                </button>
-              </div>
+              <MarkerPopup
+                locationId={location.id}
+                name={location.name}
+                onOpenDetails={onOpenDetails}
+              />
             </Popup>
           </Marker>
         ))}

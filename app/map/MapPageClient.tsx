@@ -9,7 +9,9 @@ import {
 } from "@/app/actions/locations";
 import { LocationDetailsPanel } from "@/app/components/LocationDetails";
 import { LocationModal } from "@/app/components/LocationModal";
+import { MapSearch } from "@/app/components/map/MapSearch";
 import { Button } from "@/app/components/ui/Button";
+import type { PlaceSearchResult } from "@/lib/geocoding";
 import type { LocationDetails, LocationSummary } from "@/server/locations";
 
 const RomaniaMap = dynamic(
@@ -37,12 +39,34 @@ export function MapPageClient({ initialLocations }: MapPageClientProps) {
   const [selectedDetails, setSelectedDetails] = useState<LocationDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [flyTarget, setFlyTarget] = useState<{
+    lat: number;
+    lng: number;
+    zoom: number;
+    key: number;
+  } | null>(null);
+  const [previewPin, setPreviewPin] = useState<{ lat: number; lng: number } | null>(null);
 
-  function handleMapClick(lat: number, lng: number) {
+  function openAddPinModal(lat: number, lng: number, name = "") {
     setPendingCoords({ lat, lng });
-    setNewName("");
+    setNewName(name);
+    setPreviewPin({ lat, lng });
     setError(null);
     setAddModalOpen(true);
+  }
+
+  function handleMapClick(lat: number, lng: number) {
+    openAddPinModal(lat, lng);
+  }
+
+  function handleSearchSelect(result: PlaceSearchResult) {
+    setFlyTarget({
+      lat: result.lat,
+      lng: result.lng,
+      zoom: 15,
+      key: Date.now(),
+    });
+    openAddPinModal(result.lat, result.lng, result.name);
   }
 
   function handleOpenDetails(id: string) {
@@ -86,6 +110,7 @@ export function MapPageClient({ initialLocations }: MapPageClientProps) {
       setLocations((current) => [...current, created]);
       setAddModalOpen(false);
       setPendingCoords(null);
+      setPreviewPin(null);
       setNewName("");
       setError(null);
     });
@@ -112,7 +137,7 @@ export function MapPageClient({ initialLocations }: MapPageClientProps) {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-rose-700">
             <MapPin className="h-4 w-4 shrink-0" />
-            <span>Tap anywhere on the map to add a pin</span>
+            <span>Search for a place or tap the map to add a pin</span>
           </div>
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-rose-500">
             {locations.length} pins
@@ -124,10 +149,17 @@ export function MapPageClient({ initialLocations }: MapPageClientProps) {
       </div>
 
       <div className="relative min-h-0 flex-1">
+        <div className="pointer-events-none absolute inset-x-0 top-3 z-[1000] flex justify-center px-3 sm:top-4 sm:px-4">
+          <div className="pointer-events-auto w-full max-w-xl">
+            <MapSearch onSelect={handleSearchSelect} />
+          </div>
+        </div>
         <RomaniaMap
           locations={locations}
           onMapClick={handleMapClick}
           onOpenDetails={handleOpenDetails}
+          flyTarget={flyTarget}
+          previewPin={previewPin}
         />
       </div>
 
@@ -136,6 +168,7 @@ export function MapPageClient({ initialLocations }: MapPageClientProps) {
         onClose={() => {
           setAddModalOpen(false);
           setPendingCoords(null);
+          setPreviewPin(null);
           setError(null);
         }}
         title="Add location"

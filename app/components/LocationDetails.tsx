@@ -10,6 +10,7 @@ import {
   updateLocationFieldAction,
 } from "@/app/actions/locations";
 import { Button } from "@/app/components/ui/Button";
+import { FieldNameInput } from "@/app/components/forms/FieldNameInput";
 import type { LocationDetails, LocationSummary } from "@/server/locations";
 
 type LocationDetailsProps = {
@@ -227,19 +228,25 @@ export function LocationDetailsPanel({
             {showAddField && (
               <form onSubmit={handleAddField} className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50/70 p-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-rose-900">Field Name</label>
-                  <input
+                  <label htmlFor="new-field-name" className="text-sm font-medium text-rose-900">
+                    Field name
+                  </label>
+                  <FieldNameInput
+                    id="new-field-name"
                     value={newFieldName}
-                    onChange={(event) => setNewFieldName(event.target.value)}
-                    className={inputClassName}
+                    onChange={setNewFieldName}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-rose-900">Field Value</label>
+                  <label htmlFor="new-field-value" className="sr-only">
+                    Value
+                  </label>
                   <input
+                    id="new-field-value"
                     value={newFieldValue}
                     onChange={(event) => setNewFieldValue(event.target.value)}
+                    placeholder="Enter value…"
                     className={inputClassName}
                   />
                 </div>
@@ -306,38 +313,35 @@ function FieldRow({
 
   return (
     <div className="rounded-2xl border border-rose-200 bg-white p-4 shadow-sm shadow-rose-100/60">
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-rose-500">
-          Field
-        </p>
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <FieldNameInput
+          value={fieldName}
+          onChange={setFieldName}
+          onBlur={() => onBlur(field.id, fieldName, fieldValue)}
+          disabled={disabled}
+          variant="title"
+          placeholder="Field name"
+          className="flex-1"
+        />
         <button
           type="button"
           disabled={disabled}
           onClick={() => onDelete(field.id)}
-          className="rounded-lg p-2 text-rose-400 transition-colors hover:bg-rose-50 hover:text-red-600 disabled:opacity-50"
+          className="shrink-0 rounded-lg p-2 text-rose-400 transition-colors hover:bg-rose-50 hover:text-red-600 disabled:opacity-50"
           aria-label="Delete field"
         >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
-      <div className="space-y-3">
-        <input
-          value={fieldName}
-          onChange={(event) => setFieldName(event.target.value)}
-          onBlur={() => onBlur(field.id, fieldName, fieldValue)}
-          disabled={disabled}
-          placeholder="Field name"
-          className={inputClassName}
-        />
-        <input
-          value={fieldValue}
-          onChange={(event) => setFieldValue(event.target.value)}
-          onBlur={() => onBlur(field.id, fieldName, fieldValue)}
-          disabled={disabled}
-          placeholder="Field value"
-          className={inputClassName}
-        />
-      </div>
+      <input
+        value={fieldValue}
+        onChange={(event) => setFieldValue(event.target.value)}
+        onBlur={() => onBlur(field.id, fieldName, fieldValue)}
+        disabled={disabled}
+        placeholder="Enter value…"
+        aria-label={`${fieldName || "Field"} value`}
+        className={inputClassName}
+      />
     </div>
   );
 }
