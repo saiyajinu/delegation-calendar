@@ -11,6 +11,11 @@ function getUserCode(formData: FormData): string | null {
   return normalizeUserCode(String(formData.get("userCode") ?? ""));
 }
 
+function parseLocationId(formData: FormData): string | null {
+  const raw = String(formData.get("locationId") ?? "").trim();
+  return raw || null;
+}
+
 export async function createBusinessTrip(
   formData: FormData,
 ): Promise<ActionResult> {
@@ -48,6 +53,7 @@ export async function createBusinessTrip(
     startDate,
     endDate,
     userCode,
+    locationId: parseLocationId(formData),
   });
 
   revalidatePath("/");
@@ -104,6 +110,7 @@ export async function updateBusinessTrip(
     startDate,
     endDate,
     userCode,
+    locationId: parseLocationId(formData),
   });
 
   revalidatePath("/");

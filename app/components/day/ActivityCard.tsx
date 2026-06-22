@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Trash2, Edit2 } from "lucide-react";
 import type { Activity } from "@/lib/db";
+import type { WithLocationName } from "@/lib/locations";
 import { deleteActivity } from "@/app/actions/activities";
 import { getPersistedUserCode } from "@/lib/user-code";
 import { ActivityEditModal } from "@/app/components/day/ActivityEditModal";
+import { LocationBadge } from "@/app/components/ui/LocationBadge";
 
 type ActivityCardProps = {
-  activity: Activity;
+  activity: WithLocationName<Activity>;
   dateParam: string;
   viewingDayParam?: string;
 };
@@ -41,6 +43,11 @@ export function ActivityCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <h3 className="font-medium text-rose-950">{activity.title}</h3>
+            {activity.locationName ? (
+              <div className="mt-2">
+                <LocationBadge name={activity.locationName} />
+              </div>
+            ) : null}
             {activity.description && (
               <p className="mt-2 text-sm leading-relaxed text-rose-700">
                 {activity.description}

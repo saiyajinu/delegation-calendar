@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createBusinessTrip } from "@/app/actions/business-trips";
 import { getPersistedUserCode } from "@/lib/user-code";
 import { Button } from "@/app/components/ui/Button";
+import { LocationPicker } from "@/app/components/forms/LocationPicker";
 
 type BusinessTripFormProps = {
   defaultStartDate: string;
@@ -19,6 +20,7 @@ export function BusinessTripForm({
   onSuccess,
 }: BusinessTripFormProps) {
   const [error, setError] = useState<string | null>(null);
+  const [city, setCity] = useState("");
   const [isPending, startTransition] = useTransition();
   const userCode = getPersistedUserCode();
 
@@ -59,10 +61,21 @@ export function BusinessTripForm({
           id="trip-city"
           name="city"
           required
+          value={city}
+          onChange={(event) => setCity(event.target.value)}
           className="w-full rounded-lg border border-rose-200 px-3 py-2 text-sm outline-none ring-rose-300 focus:ring-2"
-          placeholder="Berlin"
+          placeholder="Bucharest"
         />
       </div>
+      <LocationPicker
+        label="Destination on map"
+        helpText="Pick a saved map pin for this delegation. City can auto-fill from the pin name."
+        onChange={(_id, location) => {
+          if (location && !city.trim()) {
+            setCity(location.name);
+          }
+        }}
+      />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label htmlFor="trip-start" className="mb-1 block text-sm font-medium text-rose-900">

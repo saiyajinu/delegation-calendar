@@ -27,7 +27,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <AppHeader />
+      <AppHeader active="calendar" />
       <main className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-6xl flex-col px-6 py-6">
         <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-rose-600">Loading calendar…</div>}>
           <CalendarPageClient events={events} />

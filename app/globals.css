@@ -26,6 +26,12 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
+
 @keyframes modal-fade-in {
   from {
     opacity: 0;

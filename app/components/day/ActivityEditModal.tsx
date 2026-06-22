@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import type { Activity } from "@/lib/db";
+import { useEffect, useState } from "react";
 import { updateActivity } from "@/app/actions/activities";
 import { getPersistedUserCode } from "@/lib/user-code";
 import { Modal } from "@/app/components/ui/Modal";
+import { LocationPicker } from "@/app/components/forms/LocationPicker";
 import { formatDateParam, parseDateParam } from "@/lib/dates";
+import type { WithLocationName } from "@/lib/locations";
+import type { Activity } from "@/lib/db";
 
 type ActivityEditModalProps = {
-  activity: Activity;
+  activity: WithLocationName<Activity>;
   dateParam: string;
   viewingDayParam?: string;
   open: boolean;
@@ -25,9 +27,19 @@ export function ActivityEditModal({
   const [title, setTitle] = useState(activity.title);
   const [description, setDescription] = useState(activity.description || "");
   const [date, setDate] = useState(formatDateParam(activity.date));
+  const [locationId, setLocationId] = useState<string | null>(activity.locationId);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const userCode = getPersistedUserCode();
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle(activity.title);
+    setDescription(activity.description || "");
+    setDate(formatDateParam(activity.date));
+    setLocationId(activity.locationId);
+    setError("");
+  }, [open, activity]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,6 +51,7 @@ export function ActivityEditModal({
     formData.set("title", title);
     formData.set("description", description);
     formData.set("date", date);
+    formData.set("locationId", locationId ?? "");
     if (viewingDayParam) formData.set("viewingDay", viewingDayParam);
     if (userCode) formData.set("userCode", userCode);
 
@@ -104,6 +117,11 @@ export function ActivityEditModal({
             disabled={isLoading}
           />
         </div>
+
+        <LocationPicker
+          value={locationId}
+          onChange={(nextId) => setLocationId(nextId)}
+        />
 
         <div className="flex gap-3 pt-4">
           <button

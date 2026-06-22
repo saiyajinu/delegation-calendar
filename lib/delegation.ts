@@ -1,4 +1,5 @@
 import type { Activity, BusinessTrip } from "@/lib/db";
+import type { WithLocationName } from "@/lib/locations";
 import {
   eachDayInclusive,
   formatDateParam,
@@ -9,16 +10,16 @@ export type DelegationDay = {
   date: Date;
   dateParam: string;
   label: string;
-  activities: Activity[];
+  activities: WithLocationName<Activity>[];
   isSelected: boolean;
 };
 
 export function buildDelegationDays(
-  trip: BusinessTrip,
-  activities: Activity[],
+  trip: WithLocationName<BusinessTrip>,
+  activities: WithLocationName<Activity>[],
   selectedDateParam: string,
 ): DelegationDay[] {
-  const byDate = new Map<string, Activity[]>();
+  const byDate = new Map<string, WithLocationName<Activity>[]>();
 
   for (const activity of activities) {
     const key = formatDateParam(activity.date);

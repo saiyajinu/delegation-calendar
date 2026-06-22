@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { DelegationDay } from "@/lib/delegation";
 import { formatShortWeekday } from "@/lib/dates";
 import { DayAddButton } from "@/app/components/day/DayAddButton";
+import { LocationBadge } from "@/app/components/ui/LocationBadge";
 
 type DelegationTimelineProps = {
   days: DelegationDay[];
@@ -89,6 +90,11 @@ export function DelegationTimeline({
                       <h4 className="text-sm font-medium text-rose-950">
                         {activity.title}
                       </h4>
+                      {activity.locationName ? (
+                        <div className="mt-1.5">
+                          <LocationBadge name={activity.locationName} />
+                        </div>
+                      ) : null}
                       {activity.description && (
                         <p className="mt-1 text-sm leading-relaxed text-rose-700">
                           {activity.description}

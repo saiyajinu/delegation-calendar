@@ -11,6 +11,11 @@ function getUserCode(formData: FormData): string | null {
   return normalizeUserCode(String(formData.get("userCode") ?? ""));
 }
 
+function parseLocationId(formData: FormData): string | null {
+  const raw = String(formData.get("locationId") ?? "").trim();
+  return raw || null;
+}
+
 export async function createActivity(formData: FormData): Promise<ActionResult> {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
@@ -35,6 +40,7 @@ export async function createActivity(formData: FormData): Promise<ActionResult> 
     description: description || null,
     date,
     userCode,
+    locationId: parseLocationId(formData),
   });
 
   revalidatePath("/");
@@ -77,6 +83,7 @@ export async function updateActivity(formData: FormData): Promise<ActionResult> 
     description: description || null,
     date,
     userCode,
+    locationId: parseLocationId(formData),
   });
 
   revalidatePath("/");

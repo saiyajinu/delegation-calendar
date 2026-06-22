@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BusinessTrip } from "@/lib/db";
+import type { WithLocationName } from "@/lib/locations";
 import { updateBusinessTrip } from "@/app/actions/business-trips";
 import { getPersistedUserCode } from "@/lib/user-code";
 import { Modal } from "@/app/components/ui/Modal";
+import { LocationPicker } from "@/app/components/forms/LocationPicker";
 import { formatDateParam } from "@/lib/dates";
 
 type BusinessTripEditModalProps = {
-  trip: BusinessTrip;
+  trip: WithLocationName<BusinessTrip>;
   viewingDayParam?: string;
   open: boolean;
   onClose: () => void;
@@ -25,9 +27,21 @@ export function BusinessTripEditModal({
   const [notes, setNotes] = useState(trip.notes || "");
   const [startDate, setStartDate] = useState(formatDateParam(trip.startDate));
   const [endDate, setEndDate] = useState(formatDateParam(trip.endDate));
+  const [locationId, setLocationId] = useState<string | null>(trip.locationId);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const userCode = getPersistedUserCode();
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle(trip.title);
+    setCity(trip.city);
+    setNotes(trip.notes || "");
+    setStartDate(formatDateParam(trip.startDate));
+    setEndDate(formatDateParam(trip.endDate));
+    setLocationId(trip.locationId);
+    setError("");
+  }, [open, trip]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,6 +55,7 @@ export function BusinessTripEditModal({
     formData.set("notes", notes);
     formData.set("startDate", startDate);
     formData.set("endDate", endDate);
+    formData.set("locationId", locationId ?? "");
     if (viewingDayParam) formData.set("viewingDay", viewingDayParam);
     if (userCode) formData.set("userCode", userCode);
 
@@ -121,6 +136,17 @@ export function BusinessTripEditModal({
             />
           </div>
         </div>
+
+        <LocationPicker
+          label="Destination on map"
+          value={locationId}
+          onChange={(nextId, location) => {
+            setLocationId(nextId);
+            if (location && !city.trim()) {
+              setCity(location.name);
+            }
+          }}
+        />
 
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-rose-950">

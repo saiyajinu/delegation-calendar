@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createActivity } from "@/app/actions/activities";
 import { getPersistedUserCode } from "@/lib/user-code";
 import { Button } from "@/app/components/ui/Button";
+import { LocationPicker } from "@/app/components/forms/LocationPicker";
 
 type ActivityFormProps = {
   defaultDate: string;
@@ -70,6 +71,7 @@ export function ActivityForm({ defaultDate, viewingDay, onSuccess }: ActivityFor
           className="w-full rounded-lg border border-rose-200 px-3 py-2 text-sm outline-none ring-rose-300 focus:ring-2"
         />
       </div>
+      <LocationPicker />
       {error && (
         <p className="text-sm text-red-600" role="alert">
           {error}

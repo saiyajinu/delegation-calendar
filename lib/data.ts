@@ -1,6 +1,7 @@
 import type { Activity } from "@/lib/db";
 import { db } from "@/lib/db";
 import { buildDelegationDays } from "@/lib/delegation";
+import { enrichWithLocationNames } from "@/lib/locations";
 import {
   endOfDay,
   formatDateParam,
@@ -10,18 +11,20 @@ import {
 
 export async function getAllActivities(userCode: string | null) {
   if (!userCode) return [];
-  return db.activity.findMany({
+  const activities = await db.activity.findMany({
     where: { userCode },
     orderBy: { date: "asc" },
   });
+  return enrichWithLocationNames(activities);
 }
 
 export async function getAllBusinessTrips(userCode: string | null) {
   if (!userCode) return [];
-  return db.businessTrip.findMany({
+  const trips = await db.businessTrip.findMany({
     where: { userCode },
     orderBy: { startDate: "asc" },
   });
+  return enrichWithLocationNames(trips);
 }
 
 export async function getActivitiesAndTripsInRange(
@@ -100,16 +103,28 @@ export async function getDayDetails(dateParam: string, userCode: string | null) 
       : [];
   }
 
-  const delegationDays = activeTrip
-    ? buildDelegationDays(activeTrip, delegationActivities, dateParam)
-    : [];
+  const [enrichedActivities, enrichedActiveTrip, enrichedDelegationActivities] =
+    await Promise.all([
+      enrichWithLocationNames(activities),
+      activeTrip ? enrichWithLocationNames([activeTrip]).then((items) => items[0] ?? null) : null,
+      enrichWithLocationNames(delegationActivities),
+    ]);
+
+  const enrichedDelegationDays =
+    enrichedActiveTrip
+      ? buildDelegationDays(
+          enrichedActiveTrip,
+          enrichedDelegationActivities,
+          dateParam
+        )
+      : [];
 
   return {
     date: dayStart,
     dateParam: formatDateParam(dayStart),
-    activities,
-    activeTrip,
-    delegationActivities,
-    delegationDays,
+    activities: enrichedActivities,
+    activeTrip: enrichedActiveTrip,
+    delegationActivities: enrichedDelegationActivities,
+    delegationDays: enrichedDelegationDays,
   };
 }

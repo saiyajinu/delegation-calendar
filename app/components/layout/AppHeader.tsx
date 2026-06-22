@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Calendar } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 import { normalizeUserCode } from "@/lib/user-code";
 
 type AppHeaderProps = {
   backHref?: string;
   backLabel?: string;
+  active?: "calendar" | "map";
 };
 
 export async function AppHeader({
   backHref = "/",
   backLabel = "← Calendar",
+  active,
 }: AppHeaderProps) {
   const requestCookies = await cookies();
   const userCode = normalizeUserCode(requestCookies.get("userCode")?.value ?? null);
@@ -24,8 +26,29 @@ export async function AppHeader({
           </span>
           Delegation Calendar
         </Link>
-        <div className="flex items-center gap-3">
-          {backLabel && backHref !== "/" && (
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            href="/"
+            className={`hidden rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:inline-flex ${
+              active === "calendar"
+                ? "bg-rose-100 text-rose-950"
+                : "text-rose-700 hover:bg-rose-50 hover:text-rose-950"
+            }`}
+          >
+            Calendar
+          </Link>
+          <Link
+            href="/map"
+            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold shadow-md transition-all sm:px-4 ${
+              active === "map"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-300/50 ring-2 ring-emerald-300/60"
+                : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-200/80 hover:from-emerald-600 hover:to-teal-700 hover:shadow-lg hover:shadow-emerald-200"
+            }`}
+          >
+            <MapPin className="h-4 w-4" />
+            <span>Romania Map</span>
+          </Link>
+          {backLabel && backHref !== "/" && active !== "map" && (
             <Link
               href={backHref}
               className="text-sm font-medium text-rose-700 transition-colors hover:text-rose-950"

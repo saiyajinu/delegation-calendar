@@ -1,4 +1,5 @@
 import type { Activity, BusinessTrip } from "@/lib/db";
+import type { WithLocationName } from "@/lib/locations";
 import {
   formatDateParam,
   toFullCalendarExclusiveEnd,
@@ -22,12 +23,15 @@ export type CalendarEvent = {
   };
 };
 
-export function activitiesToEvents(activities: Activity[]): CalendarEvent[] {
+export function activitiesToEvents(
+  activities: WithLocationName<Activity>[]
+): CalendarEvent[] {
   return activities.map((activity) => {
     const date = formatDateParam(activity.date);
+    const locationSuffix = activity.locationName ? ` · ${activity.locationName}` : "";
     return {
       id: `activity-${activity.id}`,
-      title: activity.title,
+      title: `${activity.title}${locationSuffix}`,
       start: date,
       allDay: true,
       backgroundColor: ACTIVITY_COLOR,
@@ -41,19 +45,22 @@ export function activitiesToEvents(activities: Activity[]): CalendarEvent[] {
   });
 }
 
-export function tripsToEvents(trips: BusinessTrip[]): CalendarEvent[] {
-  return trips.map((trip) => ({
-    id: `trip-${trip.id}`,
-    title: `${trip.title} · ${trip.city}`,
-    start: formatDateParam(trip.startDate),
-    end: toFullCalendarExclusiveEnd(trip.endDate),
-    allDay: true,
-    backgroundColor: TRIP_COLOR,
-    borderColor: TRIP_COLOR,
-    extendedProps: {
-      type: "trip",
-      entityId: trip.id,
-      date: formatDateParam(trip.startDate),
-    },
-  }));
+export function tripsToEvents(trips: WithLocationName<BusinessTrip>[]): CalendarEvent[] {
+  return trips.map((trip) => {
+    const place = trip.locationName ?? trip.city;
+    return {
+      id: `trip-${trip.id}`,
+      title: `${trip.title} · ${place}`,
+      start: formatDateParam(trip.startDate),
+      end: toFullCalendarExclusiveEnd(trip.endDate),
+      allDay: true,
+      backgroundColor: TRIP_COLOR,
+      borderColor: TRIP_COLOR,
+      extendedProps: {
+        type: "trip",
+        entityId: trip.id,
+        date: formatDateParam(trip.startDate),
+      },
+    };
+  });
 }

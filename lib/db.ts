@@ -7,6 +7,7 @@ interface Activity {
   date: Date;
   createdAt: Date;
   userCode: string;
+  locationId: string | null;
 }
 
 interface BusinessTrip {
@@ -18,6 +19,33 @@ interface BusinessTrip {
   notes: string | null;
   createdAt: Date;
   userCode: string;
+  locationId: string | null;
+}
+
+function mapActivityRow(row: Record<string, unknown>): Activity {
+  return {
+    id: row.id as number,
+    title: row.title as string,
+    description: row.description as string | null,
+    date: new Date(row.date as string),
+    createdAt: new Date(row.createdAt as string),
+    userCode: row.userCode as string,
+    locationId: (row.location_id as string | null | undefined) ?? null,
+  };
+}
+
+function mapBusinessTripRow(row: Record<string, unknown>): BusinessTrip {
+  return {
+    id: row.id as number,
+    title: row.title as string,
+    city: row.city as string,
+    startDate: new Date(row.startDate as string),
+    endDate: new Date(row.endDate as string),
+    notes: row.notes as string | null,
+    createdAt: new Date(row.createdAt as string),
+    userCode: row.userCode as string,
+    locationId: (row.location_id as string | null | undefined) ?? null,
+  };
 }
 
 const client = createClient({
@@ -31,7 +59,14 @@ async function ensureColumnExists(table: string, column: string, definition: str
   const result = await client.execute({ sql: `PRAGMA table_info(${table})` });
   const hasColumn = result.rows.some((row: any) => row.name === column);
   if (!hasColumn) {
-    await client.execute({ sql: `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}` });
+    try {
+      await client.execute({ sql: `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.toLowerCase().includes("duplicate column")) {
+        throw error;
+      }
+    }
   }
 }
 
@@ -66,6 +101,33 @@ async function ensureTablesExist() {
 
     await ensureColumnExists("Activity", "userCode", "TEXT NOT NULL DEFAULT ''");
     await ensureColumnExists("BusinessTrip", "userCode", "TEXT NOT NULL DEFAULT ''");
+    await ensureColumnExists("Activity", "location_id", "TEXT");
+    await ensureColumnExists("BusinessTrip", "location_id", "TEXT");
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS locations (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        lat REAL NOT NULL,
+        lng REAL NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    `);
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS location_fields (
+        id TEXT PRIMARY KEY,
+        location_id TEXT NOT NULL,
+        field_name TEXT NOT NULL,
+        field_value TEXT,
+        FOREIGN KEY(location_id) REFERENCES locations(id)
+      )
+    `);
+
+    await client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_location_fields_location_id
+      ON location_fields(location_id)
+    `);
 
     dbInitialized = true;
   } catch (error) {
@@ -81,22 +143,24 @@ export const db = {
       description: string | null;
       date: Date;
       userCode: string;
+      locationId?: string | null;
     }) {
       await ensureTablesExist();
       const result = await client.execute({
-        sql: `INSERT INTO Activity (title, description, date, createdAt, userCode) VALUES (?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO Activity (title, description, date, createdAt, userCode, location_id) VALUES (?, ?, ?, ?, ?, ?)`,
         args: [
           data.title,
           data.description,
           data.date.toISOString(),
           new Date().toISOString(),
           data.userCode,
+          data.locationId ?? null,
         ],
       });
       return { id: Number(result.lastInsertRowid) };
     },
 
-    async update(id: number, data: { title?: string; description?: string | null; date?: Date; userCode?: string }) {
+    async update(id: number, data: { title?: string; description?: string | null; date?: Date; userCode?: string; locationId?: string | null }) {
       await ensureTablesExist();
       const updates: string[] = [];
       const args: any[] = [];
@@ -112,6 +176,10 @@ export const db = {
       if (data.date !== undefined) {
         updates.push("date = ?");
         args.push(data.date.toISOString());
+      }
+      if (data.locationId !== undefined) {
+        updates.push("location_id = ?");
+        args.push(data.locationId);
       }
 
       if (updates.length === 0) return;
@@ -165,14 +233,7 @@ export const db = {
       }
 
       const result = await client.execute({ sql: sql + orderClause, args });
-      return result.rows.map((row) => ({
-        id: row.id as number,
-        title: row.title as string,
-        description: row.description as string | null,
-        date: new Date(row.date as string),
-        createdAt: new Date(row.createdAt as string),
-        userCode: row.userCode as string,
-      })) as Activity[];
+      return result.rows.map((row) => mapActivityRow(row as Record<string, unknown>));
     },
 
     async findMany2(options?: { orderBy?: any; where?: any }) {
@@ -218,14 +279,7 @@ export const db = {
         args,
       });
 
-      return result.rows.map((row) => ({
-        id: row.id as number,
-        title: row.title as string,
-        description: row.description as string | null,
-        date: new Date(row.date as string),
-        createdAt: new Date(row.createdAt as string),
-        userCode: row.userCode as string,
-      })) as Activity[];
+      return result.rows.map((row) => mapActivityRow(row as Record<string, unknown>));
     },
   },
 
@@ -237,10 +291,11 @@ export const db = {
       startDate: Date;
       endDate: Date;
       userCode: string;
+      locationId?: string | null;
     }) {
       await ensureTablesExist();
       const result = await client.execute({
-        sql: `INSERT INTO BusinessTrip (title, city, notes, startDate, endDate, createdAt, userCode) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO BusinessTrip (title, city, notes, startDate, endDate, createdAt, userCode, location_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           data.title,
           data.city,
@@ -249,6 +304,7 @@ export const db = {
           data.endDate.toISOString(),
           new Date().toISOString(),
           data.userCode,
+          data.locationId ?? null,
         ],
       });
       return { id: Number(result.lastInsertRowid) };
@@ -263,6 +319,7 @@ export const db = {
         startDate?: Date;
         endDate?: Date;
         userCode?: string;
+        locationId?: string | null;
       }
     ) {
       await ensureTablesExist();
@@ -288,6 +345,10 @@ export const db = {
       if (data.endDate !== undefined) {
         updates.push("endDate = ?");
         args.push(data.endDate.toISOString());
+      }
+      if (data.locationId !== undefined) {
+        updates.push("location_id = ?");
+        args.push(data.locationId);
       }
 
       if (updates.length === 0) return;
@@ -341,16 +402,7 @@ export const db = {
       }
 
       const result = await client.execute({ sql: sql + orderClause, args });
-      return result.rows.map((row) => ({
-        id: row.id as number,
-        title: row.title as string,
-        city: row.city as string,
-        startDate: new Date(row.startDate as string),
-        endDate: new Date(row.endDate as string),
-        notes: row.notes as string | null,
-        createdAt: new Date(row.createdAt as string),
-        userCode: row.userCode as string,
-      })) as BusinessTrip[];
+      return result.rows.map((row) => mapBusinessTripRow(row as Record<string, unknown>));
     },
 
     async findFirst(options?: { where?: any; orderBy?: Record<string, string> }) {
@@ -391,16 +443,7 @@ export const db = {
       if (result.rows.length === 0) return null;
 
       const row = result.rows[0];
-      return {
-        id: row.id as number,
-        title: row.title as string,
-        city: row.city as string,
-        startDate: new Date(row.startDate as string),
-        endDate: new Date(row.endDate as string),
-        notes: row.notes as string | null,
-        createdAt: new Date(row.createdAt as string),
-        userCode: row.userCode as string,
-      } as BusinessTrip;
+      return mapBusinessTripRow(row as Record<string, unknown>);
     },
 
     async findMany2(options?: { where?: any; orderBy?: Record<string, string> }) {
@@ -436,19 +479,14 @@ export const db = {
       }
 
       const result = await client.execute({ sql, args });
-      return result.rows.map((row) => ({
-        id: row.id as number,
-        title: row.title as string,
-        city: row.city as string,
-        startDate: new Date(row.startDate as string),
-        endDate: new Date(row.endDate as string),
-        notes: row.notes as string | null,
-        createdAt: new Date(row.createdAt as string),
-        userCode: row.userCode as string,
-      })) as BusinessTrip[];
+      return result.rows.map((row) => mapBusinessTripRow(row as Record<string, unknown>));
     },
   },
 };
+
+export async function ensureDbReady() {
+  await ensureTablesExist();
+}
 
 // Export types
 export type { Activity, BusinessTrip };

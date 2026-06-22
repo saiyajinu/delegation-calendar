@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { MapPin, Plane, Trash2, Edit2 } from "lucide-react";
 import type { BusinessTrip } from "@/lib/db";
+import type { WithLocationName } from "@/lib/locations";
 import { deleteBusinessTrip } from "@/app/actions/business-trips";
 import { getPersistedUserCode } from "@/lib/user-code";
 import { BusinessTripEditModal } from "@/app/components/day/BusinessTripEditModal";
+import { LocationBadge } from "@/app/components/ui/LocationBadge";
 import { formatTripDuration } from "@/lib/dates";
 
 type BusinessTripCardProps = {
-  trip: BusinessTrip;
+  trip: WithLocationName<BusinessTrip>;
   viewingDayParam?: string;
 };
 
@@ -49,6 +51,11 @@ export function BusinessTripCard({
                 <MapPin className="h-3.5 w-3.5" />
                 {trip.city}
               </p>
+              {trip.locationName ? (
+                <div className="mt-2">
+                  <LocationBadge name={trip.locationName} />
+                </div>
+              ) : null}
               <p className="mt-1 text-sm text-rose-700">
                 {formatTripDuration(trip.startDate, trip.endDate)}
               </p>
